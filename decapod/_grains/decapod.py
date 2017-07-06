@@ -35,15 +35,4 @@ def decapod():
         ps = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
         local_ip = ps.communicate()[0].rstrip("\n")
 
-        hostname = os.uname()[1]
-        match = re.search("ceph-mon", hostname)
-        if match:
-            decapod_type = 'monitor'
-            return {'decapod_type': decapod_type, 'decapod_mgmt_ip': local_ip}
-        match = re.search('ceph[0-9]*', hostname)
-        if match:
-            decapod_type = 'osd'
-            return {'pools': pools, 'cache': cache, 'decapod_type': decapod_type, 'decapod_mgmt_ip': local_ip}
-        else:
-            decapod_type = 'other'
-            return {'decapod_type': decapod_type}
+        return {'pools': pools, 'cache': cache, 'decapod_mgmt_ip': local_ip}

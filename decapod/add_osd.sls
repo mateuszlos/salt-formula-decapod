@@ -3,11 +3,13 @@
 {% set add_osd = [] %}
 {% set cache = {} %}
 
-{%- for node_name, node_grains in salt['mine.get']('ceph*', 'grains.items').iteritems() %}
-  {% if node_grains['decapod_type'] == 'monitor' %}
-    {%- do mon_ips.append(node_grains['decapod_mgmt_ip']) %}
-  {%- endif %}
-  {% if node_grains['decapod_type'] == 'osd' %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['mon_nodes_wildcard'], 'grains.items').iteritems() %}
+    {% set ip = node_grains['decapod_mgmt_ip'] %}
+    {%- do mon_ips.append(ip) %}
+{%- endfor %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['osd_nodes_wildcard'], 'grains.items').iteritems() %}
+    {% set ip = node_grains['decapod_mgmt_ip'] %}
+    {%- do osd_ips.append(ip) %}
     {%- if node_grains['nodename'] not in pillar['decapod_lcm']['add_osd'] %}
       {%- do osd_ips.append(node_grains['decapod_mgmt_ip']) %}
       {% for device in pillar['decapod']['cache_devices'] %}
@@ -30,7 +32,6 @@
         {% endif %}
       {% endfor %}
     {%- endif %}
-  {%- endif %}
 {%- endfor %}
 
 configure cluster:
@@ -46,7 +47,7 @@ configure cluster:
     - add_osd: {{ add_osd }}
     - mode: 'add_osd'
 
-{%- for node_name, node_grains in salt['mine.get']('ceph*', 'grains.items').iteritems() %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['osd_nodes_wildcard'], 'grains.items').iteritems() %}
 add new node {{ node_name }}:
   module.run:
     - name: decapod.add_node

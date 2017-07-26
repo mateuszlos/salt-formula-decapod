@@ -2,12 +2,12 @@
 {% set mon_ips = [] %}
 {% set cache = {} %}
 
-{%- for node_name, node_grains in salt['mine.get']('ceph*', 'grains.items').iteritems() %}
- {%- if node_grains['decapod_type'] == 'monitor' %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['mon_nodes_wildcard'], 'grains.items').iteritems() %}
     {%- do mon_ips.append(node_grains['decapod_mgmt_ip']) %}
-  {%- endif %}
-  {%- if node_grains['decapod_type'] == 'osd' %}
-    {%- do osd_ips.append(node_grains['decapod_mgmt_ip']) %}
+{%- endfor %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['osd_nodes_wildcard'], 'grains.items').iteritems() %}
+  {%- do osd_ips.append(node_grains['decapod_mgmt_ip']) %}
+  {% if pillar['decapod']['cache_devices'] is defined %}
     {% for device in pillar['decapod']['cache_devices'] %}
       {% if device in node_grains['cache'] %}
         {% do cache.update({node_name: pillar['decapod']['cache_devices']}) %}
@@ -16,7 +16,7 @@
         {% break %}
       {% endif %}
     {% endfor %}
-  {%- endif %}
+  {% endif %}
 {%- endfor %}
 
 configure cluster:
@@ -28,20 +28,26 @@ configure cluster:
     - mon_ips: {{ mon_ips }}
     - mode: "cluster_deploy"
 
-{%- for node_name, node_grains in salt['mine.get']('ceph*', 'grains.items').iteritems() %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['mon_nodes_wildcard'], 'grains.items').iteritems() %}
 add new node {{ node_name }}:
   module.run:
     - name: decapod.add_node
-    {%- if node_grains['pools'] is defined %}
+    - osd_devices: ''
+    - osd_journal_devices: [] 
+    - ip: {{ node_grains['decapod_mgmt_ip'] }}
+    - mode: 'cluster_deploy'
+{%- endfor %}
+
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['osd_nodes_wildcard'], 'grains.items').iteritems() %}
+add new node {{ node_name }}:
+  module.run:
+    - name: decapod.add_node
+    {%- if pillar['decapod']['ssdpools'] is defined %}
     - osd_devices: {{ node_grains['pools'] | list + pillar['decapod']['ssdpools']| list }}
     {%- else %}
-    - osd_devices: ''
+    - osd_devices: {{ node_grains['pools'] | list }}
     {%- endif %}
-    {%- if cache[node_name] is not defined and node_grains['cache'] is not defined %}
-    - osd_journal_devices: []
-    {%- else %}
     - osd_journal_devices: {{ cache[node_name] | default(node_grains['cache']) }}
-    {%- endif %}
     - ip: {{ node_grains['decapod_mgmt_ip'] }}
     - mode: 'cluster_deploy'
 {%- endfor %}

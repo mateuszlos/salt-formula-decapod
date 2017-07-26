@@ -1,5 +1,5 @@
 {% set monitors = {} %}
-{%- for node_name, node_grains in salt['mine.get']('ceph-mon*', 'grains.items').iteritems() %}
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['mon_nodes_wildcard'], 'grains.items').iteritems() %}
   {%- set localhost = node_grains.get('localhost', {}) %}
   {%- set ip = node_grains.get('ip_interfaces', {}).get('ens3', {})[0] %}
   {% do monitors.update({localhost : ip}) %}

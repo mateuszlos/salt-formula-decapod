@@ -106,7 +106,5 @@ add telegraf repo:
     - file: /etc/apt/sources.list.d/influxdb.list
 
 telegraf:
-  pkg.installed
-
-
-
+  pkg.installed:
+    - skip_verify: True

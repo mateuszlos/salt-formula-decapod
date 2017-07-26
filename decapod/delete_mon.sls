@@ -1,10 +1,9 @@
 {% set osd_ips = [] %}
 {% set mon_ips = [] %}
-{%- for node_name, node_grains in salt['mine.get']('ceph*', 'grains.items').iteritems() %}
-  {%- if node_grains['decapod_type'] == 'monitor' %}
-    {%- if node_grains['fqdn'] in pillar['decapod_lcm']['del_mon'] %}
-      {%- do mon_ips.append(node_grains['decapod_mgmt_ip']) %}
-    {%- endif %}
+
+{%- for node_name, node_grains in salt['mine.get'](pillar['decapod']['mon_nodes_wildcard'], 'grains.items').iteritems() %}
+  {%- if node_grains['fqdn'] in pillar['decapod_lcm']['del_mon'] %}
+    {%- do mon_ips.append(node_grains['decapod_mgmt_ip']) %}
   {%- endif %}
 {%- endfor %}
 

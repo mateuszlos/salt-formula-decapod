@@ -108,6 +108,3 @@ add telegraf repo:
 telegraf:
   pkg.installed:
     - skip_verify: True
-
-
-
